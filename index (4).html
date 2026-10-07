@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>API Oficial do WhatsApp (COEX) · Frédy</title>
+<meta name="description" content="Blinde o seu WhatsApp contra bloqueios com a API Oficial (COEX): número estável, dentro das regras da Meta, sem risco de banimento.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23142138'/%3E%3Ctext x='33' y='45' text-anchor='middle' font-family='Arial,Helvetica,sans-serif' font-weight='900' font-style='italic' font-size='38' fill='%233CA8DF'%3EF%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#111827;            /* fundo do tema escuro do Frédy */
+    --s1:#152238; --s2:#1A2A44; --s3:#22365A;
+    --blue:#3CA8DF;          /* azul do logo */
+    --blue-hi:#6DBEE7;
+    --navy:#142138;          /* navy do logo */
+    --on-blue:#0B1A2E;       /* texto sobre o azul (contraste AA) */
+    --ink:#EAF4FB; --mut:#9DB0C8; --mut2:#7187A6;
+    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+    --wpp:#25D366;
+    --head-h:64px;
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    min-height:100vh; overflow-x:hidden;
+  }
+  b,strong{color:#fff;font-weight:700}
+  ::selection{background:rgba(60,168,223,.35)}
+  button{font-family:inherit}
+  :focus-visible{outline:2px solid var(--blue-hi);outline-offset:3px}
+
+  /* brilho único no topo — sem animação de fundo */
+  .glow-top{position:fixed;inset:0 0 auto 0;height:70vh;z-index:0;pointer-events:none;
+    background:radial-gradient(70% 60% at 50% -10%, rgba(60,168,223,.16), transparent 70%)}
+
+  /* ---------- header ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:50;
+    height:calc(var(--head-h) + env(safe-area-inset-top,0px));
+    padding:env(safe-area-inset-top,0px) clamp(14px,4vw,40px) 0;
+    display:flex;align-items:center;gap:18px;
+    background:rgba(17,24,39,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .logo{flex:none;font-weight:800;font-style:italic;font-size:25px;letter-spacing:-.6px;line-height:1;text-decoration:none;user-select:none}
+  .logo .fr{color:#fff}
+  .logo .edy{color:var(--blue)}
+  .progress{flex:1;max-width:520px;margin:0 auto;height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+  .progress .fill{height:100%;width:0;border-radius:99px;background:var(--blue);transition:width .6s var(--ease)}
+  .counter{flex:none;font-weight:600;font-size:13px;color:var(--mut)}
+  .counter b{font-size:18px;color:#fff;margin-right:3px;font-weight:800}
+
+  /* ---------- layout ---------- */
+  .stage{position:relative;z-index:2;max-width:720px;margin:0 auto;
+    padding:calc(var(--head-h) + env(safe-area-inset-top,0px) + 26px) clamp(14px,4vw,24px) calc(60px + env(safe-area-inset-bottom,0px));
+    min-height:100vh}
+  #feed{display:flex;flex-direction:column;gap:14px}
+
+  .row{display:flex;align-items:flex-end;gap:10px;max-width:100%}
+  .row.user{justify-content:flex-end}
+  .avatar{flex:none;width:38px;height:38px;border-radius:50%;overflow:hidden;border:2px solid rgba(60,168,223,.6);background:var(--navy);display:grid;place-items:center}
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .avatar .mono{font-weight:800;font-style:italic;font-size:19px;color:var(--blue);line-height:1;transform:translateX(-1px)}
+  .bubble{max-width:80%;padding:13px 17px;border-radius:18px;font-size:15.5px;line-height:1.55}
+  .row.bot .bubble{background:var(--s1);border:1px solid var(--line);border-bottom-left-radius:6px}
+  .row.user .bubble{background:var(--blue);color:var(--on-blue);font-weight:700;border-bottom-right-radius:6px}
+
+  .typing{display:flex;gap:5px;align-items:center;padding:15px 18px}
+  .typing span{width:7px;height:7px;border-radius:50%;background:var(--mut);animation:blink 1.3s infinite both}
+  .typing span:nth-child(2){animation-delay:.18s}
+  .typing span:nth-child(3){animation-delay:.36s}
+  @keyframes blink{0%,60%,100%{opacity:.25;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+
+  .pop{animation:pop .45s var(--ease) both}
+  @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* ---------- composer ---------- */
+  #composer{margin-top:8px}
+  .composer-in{animation:pop .4s var(--ease) both;display:flex;flex-direction:column;gap:9px;align-items:flex-end;width:100%}
+  .field-label{align-self:flex-end;font-weight:600;font-size:13px;color:var(--mut2);margin-right:6px}
+
+  .pill{display:flex;align-items:center;gap:8px;width:min(440px,100%);background:var(--s1);border:1px solid var(--line2);border-radius:99px;padding:6px 6px 6px 18px;transition:border-color .25s,box-shadow .25s}
+  .pill:focus-within{border-color:rgba(60,168,223,.7);box-shadow:0 0 0 4px rgba(60,168,223,.16)}
+  .pill.glow{animation:ring 1.4s ease-in-out infinite}
+  @keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(60,168,223,.0);border-color:rgba(60,168,223,.35)}50%{box-shadow:0 0 0 5px rgba(60,168,223,.28);border-color:var(--blue-hi)}}
+  .pill .ddi{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--mut);font-size:15px;flex:none}
+  .pill .ddi svg{border-radius:2px;display:block}
+  .pill-input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:#fff;font-size:16px;font-family:inherit;padding:8px 0}
+  .pill-input::placeholder{color:#62789A}
+  .send{flex:none;width:42px;height:42px;border-radius:50%;border:0;cursor:pointer;background:var(--blue);color:var(--on-blue);display:grid;place-items:center;transition:transform .2s var(--ease),opacity .2s,background .2s}
+  .send:hover{background:var(--blue-hi);transform:translateY(-1px)}
+  .send:disabled{opacity:.35;cursor:not-allowed;background:#2A3A55;color:#8EA2BF;transform:none}
+  .send svg{width:20px;height:20px}
+  .err{align-self:flex-end;color:#FF9BAA;font-size:13px;margin-right:8px}
+
+  /* select */
+  .select-trigger{width:min(440px,100%);display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--s1);border:1px solid var(--line2);border-radius:14px;padding:15px 16px;color:#fff;font-size:15.5px;cursor:pointer;transition:border-color .25s,box-shadow .25s;text-align:left}
+  .select-trigger:hover{border-color:rgba(60,168,223,.5)}
+  .select-trigger[aria-expanded="true"]{border-color:rgba(60,168,223,.7);box-shadow:0 0 0 4px rgba(60,168,223,.16)}
+  .select-trigger .muted{color:var(--mut2)}
+  .select-trigger svg{width:18px;height:18px;color:var(--mut);transition:transform .3s var(--ease);flex:none}
+  .select-trigger[aria-expanded="true"] svg{transform:rotate(180deg)}
+  .select-panel{width:min(440px,100%);background:var(--s2);border:1px solid var(--line2);border-radius:14px;max-height:300px;overflow-y:auto;padding:6px;animation:pop .25s var(--ease) both;box-shadow:0 24px 60px -20px rgba(0,0,0,.7)}
+  .select-panel::-webkit-scrollbar{width:8px}.select-panel::-webkit-scrollbar-thumb{background:#2B4064;border-radius:8px}
+  .option{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--ink);font-size:15px;padding:12px 13px;border-radius:10px;cursor:pointer;transition:background .15s}
+  .option:hover,.option:focus-visible{background:var(--s3);color:#fff;outline:none}
+
+  /* ---------- cards de status ---------- */
+  .app-card{width:100%;background:var(--s1);border:1px solid var(--line2);border-radius:22px;padding:clamp(20px,4vw,30px);box-shadow:0 30px 80px -30px rgba(0,0,0,.8)}
+  .success{text-align:center;padding:6px 4px 2px}
+  .check-wrap{width:76px;height:76px;margin:4px auto 18px;border-radius:50%;background:rgba(60,168,223,.12);border:1px solid rgba(60,168,223,.45);display:grid;place-items:center}
+  .check-wrap svg{width:40px;height:40px;color:var(--blue)}
+  .check-wrap svg path{stroke-dasharray:48;stroke-dashoffset:48;animation:draw .7s .15s var(--ease) forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .spinner{width:22px;height:22px;border:2.5px solid rgba(255,255,255,.3);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .success h2{font-weight:800;font-size:clamp(21px,5vw,27px);letter-spacing:-.3px;margin:0 0 10px}
+  .success p{color:var(--mut);font-size:15.5px;line-height:1.65;max-width:430px;margin:0 auto 6px}
+  .retry-btn{margin-top:16px;border:0;border-radius:14px;background:var(--blue);color:var(--on-blue);font-weight:800;font-size:15px;padding:14px 22px;cursor:pointer}
+  .retry-btn:hover{background:var(--blue-hi)}
+
+  .consultant{margin-top:20px;padding-top:18px;border-top:1px solid var(--line2)}
+  .consultant-label{font-weight:600;font-size:13px;color:var(--mut2);margin-bottom:12px}
+  .consultant-card{display:flex;align-items:center;gap:14px;text-align:left;background:var(--s2);border:1px solid var(--line2);border-radius:16px;padding:14px 16px}
+  .consultant-photo{width:62px;height:62px;border-radius:50%;object-fit:cover;border:2px solid rgba(60,168,223,.6);flex:0 0 62px;background:var(--navy)}
+  .consultant-info{min-width:0}
+  .consultant-name{font-weight:800;font-size:16px}
+  .consultant-role{color:var(--mut);font-size:13px;line-height:1.35;margin:2px 0 4px}
+  .consultant-phone{color:#7EE2A8;font-size:13.5px;font-weight:700}
+  .wpp-btn{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:14px;background:var(--wpp);color:#05271B;font-weight:800;font-size:15px;padding:14px 18px;border-radius:14px;width:100%;text-decoration:none}
+  .wpp-btn svg{width:19px;height:19px}
+
+  @media (max-width:560px){
+    .bubble{max-width:84%;font-size:15px}
+    .avatar{width:34px;height:34px}
+    .logo{font-size:22px}
+    header{gap:12px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .pop,.composer-in,.select-panel{animation:fade .25s ease both}
+    .typing span{animation:none;opacity:.55}
+    .check-wrap svg path{animation:none;stroke-dashoffset:0}
+    .pill.glow{animation:none;border-color:var(--blue-hi)}
+    .progress .fill{transition:width .2s linear}
+  }
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+</style>
+</head>
+<body>
+  <div class="glow-top" aria-hidden="true"></div>
+
+  <header>
+    <span class="logo" role="img" aria-label="Frédy"><span class="fr">Fr</span><span class="edy">édy</span></span>
+    <div class="progress" aria-hidden="true"><div class="fill" id="fill"></div></div>
+    <div class="counter"><b id="step">0</b>de <span id="total">11</span></div>
+  </header>
+
+  <main class="stage">
+    <div id="feed" role="log" aria-live="polite" aria-label="Conversa do diagnóstico"></div>
+    <div id="composer"></div>
+  </main>
+
+<script>
+"use strict";
+/* ===================================================================
+   CONFIG — único bloco que precisa ser editado
+   Endpoints vazios = sem integração: nada é enviado e o lead entra pelo WhatsApp
+   do botão final, com o resumo das respostas na mensagem pré-preenchida.
+   =================================================================== */
+const CONFIG = {
+  LEAD_ENDPOINT:    "",   // POST JSON → webhook n8n que cria o lead/card. Responde {excluido, consultor?}
+  PARCIAL_ENDPOINT: "",   // POST JSON → captura parcial (depois do WhatsApp e do investimento)
+  TRACK_ENDPOINT:   "",   // POST JSON → telemetria por passo (opcional)
+  CHECK_ENDPOINT:   "",   // POST {phone} → {valid, canonical} — valida WhatsApp ativo (opcional, fail-open)
+  PIXEL_ID:         "",   // Meta Pixel (opcional). Vazio = não carrega o pixel
+  ORIGEM:           "funil-coex-fredy",
+  PRECO_POR_NUMERO: "R$ 950",
+  AVATAR_URL:       "",   // foto do bot. Vazio = monograma "F"
+  CONSULTOR_PADRAO: {     // usado quando o webhook não devolve consultor
+    nome:  "",            // ex.: "Fulano da Silva"
+    cargo: "Especialista em API Oficial do WhatsApp",
+    wpp:   "554740034215", // (47) 4003-4215 — só dígitos com DDI
+    foto:  ""             // URL https da foto
+  },
+  TOTAL_STEPS: 11
+};
+
+/* Link de consultor: /coex-<slug>.html ou ?consultor=<slug>. Quem valida o slug é o servidor. */
+const CONSULTOR = ((location.pathname.match(/coex-([a-z0-9-]{2,24})\.html$/i) || [])[1]
+  || new URLSearchParams(location.search).get("consultor") || "")
+  .toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 24);
+
+const SESSION_ID = (window.crypto && crypto.randomUUID)
+  ? crypto.randomUUID()
+  : ("lead-" + Date.now() + "-" + Math.random().toString(16).slice(2));
+
+/* ---------- utilidades de rede ---------- */
+function getUtm(){
+  const u = new URLSearchParams(location.search), o = {};
+  ["utm_source","utm_medium","utm_campaign","utm_content","utm_term","gclid","fbclid"].forEach(k => { if (u.get(k)) o[k] = u.get(k).slice(0, 200); });
+  return o;
+}
+function fireAndForget(url, obj){
+  if (!url) return;
+  try {
+    fetch(url, { method:"POST", headers:{ "Content-Type":"application/json" }, keepalive:true, body:JSON.stringify(obj) }).catch(() => {});
+  } catch (_) {}
+}
+async function postJSON(url, obj, timeoutMs){
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs || 9000);
+  try {
+    const r = await fetch(url, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(obj), signal:ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const txt = await r.text();
+    try { return txt ? JSON.parse(txt) : {}; } catch (_) { return {}; }
+  } catch (e) { clearTimeout(t); throw e; }
+}
+
+/* ---------- telemetria ---------- */
+let _lastStep = -1;
+function track(step, name){
+  if (step === _lastStep && !name) return; _lastStep = step;
+  fireAndForget(CONFIG.TRACK_ENDPOINT, { session_id:SESSION_ID, source:"coex", step, step_name:name || String(step), pagina:location.href, utm:getUtm() });
+}
+function trackEvent(name, extra){
+  fireAndForget(CONFIG.TRACK_ENDPOINT, { session_id:SESSION_ID, source:"coex", step:-1, step_name:name, event:(name.indexOf("js") === 0 ? name : "mark"), extra:extra || "", pagina:location.href });
+}
+window.addEventListener("error", e => trackEvent("jserror", ((e && e.message) || "err").slice(0, 290)));
+window.addEventListener("unhandledrejection", e => { const r = e && e.reason; trackEvent("jsreject", String((r && (r.message || r)) || "").slice(0, 290)); });
+
+/* ---------- Meta Pixel (opcional) ---------- */
+if (CONFIG.PIXEL_ID) {
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq("init", CONFIG.PIXEL_ID);
+  fbq("track", "PageView");
+}
+const getCookie = n => { const m = document.cookie.match("(?:^|; )" + n + "=([^;]*)"); return m ? decodeURIComponent(m[1]) : ""; };
+function trackLead(data){
+  try { if (typeof fbq === "function") fbq("track", "Lead", { content_name:"API Oficial COEX", content_category:data.segmento || undefined }, { eventID:SESSION_ID }); } catch (_) {}
+}
+
+/* ---------- ícones ---------- */
+const I = {
+  send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+  chevron:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  wpp:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M.5 23.5l1.6-6A11.4 11.4 0 1 1 12 23.4a11.5 11.5 0 0 1-5.5-1.4zM12 3.7a9.4 9.4 0 0 0-8 14.3l.2.4-1 3.5 3.6-1 .4.2A9.4 9.4 0 1 0 12 3.7m5.5 13.4c-.2.6-1.4 1.2-1.9 1.2s-1.3.2-3.6-.8a8.7 8.7 0 0 1-3.8-3.4c-.3-.4-.9-1.4-.9-2.6s.6-1.9.9-2.1a.9.9 0 0 1 .7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.5c-.2.2-.3.3-.1.6a8 8 0 0 0 3.3 2.9c.3.1.5.1.6-.1l.7-.9c.2-.2.4-.2.6-.1l2 1c.3.1.4.2.5.3s0 .8-.3 1.4"/></svg>'
+};
+const FLAG_BR = '<svg viewBox="0 0 28 20" width="18" height="13" aria-hidden="true"><rect width="28" height="20" fill="#159a3f"/><path d="M14 3l10 7-10 7L4 10z" fill="#ffdf00"/><circle cx="14" cy="10" r="3.4" fill="#0a3a8f"/></svg>';
+
+/* ---------- listas ---------- */
+const SEGMENTOS = ["Infoprodutos / Cursos","Serviços","Comércio / Varejo","E-commerce","Saúde / Estética","Educação","Agência / Marketing","Imobiliário","Tecnologia / SaaS","Indústria","Financeiro / Crédito / Empréstimo","Apostas / Bets","Rifas / Sorteios","Consórcios","Outro"];
+const QTD_CONTAS = ["1 conta","2 contas","3 a 5 contas","6 a 10 contas","Mais de 10 contas"];
+const INVESTIMENTO = ["Sim, está tudo bem","Sim, mas quero a condição especial (mais contas)","Preciso entender melhor antes","Está acima do que posso investir agora"];
+const DISPAROS = ["Sim, preciso fazer disparos ou iniciar novas conversas","Não, só atendimento receptivo","Talvez no futuro"];
+const USO = ["Sim, é por ele que eu atendo e vendo","Não, uso só para família e amigos"];
+const USO_RECUPERA = ["Atendo sim, pelo WhatsApp comum","Não, não vendo nada por WhatsApp"];
+const RESTRICOES_QTD = ["Só 1","2 a 5","5 ou mais"];
+const BANIDO_IMPORTANCIA = ["Muito importante","Pode ser trocado","Dependo 100% dele"];
+const ATENDIMENTO = ["Só eu mesmo","2 a 5 pessoas","5 a 10 pessoas","10 ou mais"];
+const LISTA_TIPO = ["Base de clientes (já falaram comigo)","Lista fria (prospecção)"];
+const RESTRICAO = ["Sim, estou com restrição nesse momento","Sim, já tomei mas não estou com restrição agora","Ainda não tomei","Meu WhatsApp foi banido permanentemente"];
+
+/* ---------- engine do chat ---------- */
+const feed = document.getElementById("feed");
+const composer = document.getElementById("composer");
+const fill = document.getElementById("fill");
+const stepEl = document.getElementById("step");
+document.getElementById("total").textContent = CONFIG.TOTAL_STEPS;
+const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const wait = ms => new Promise(r => setTimeout(r, REDUCE ? Math.min(ms, 120) : ms));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+function el(tag, cls, html){ const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+function avatarHTML(){
+  return CONFIG.AVATAR_URL
+    ? `<div class="avatar"><img src="${esc(CONFIG.AVATAR_URL)}" alt=""></div>`
+    : `<div class="avatar" aria-hidden="true"><span class="mono">F</span></div>`;
+}
+function down(){
+  requestAnimationFrame(() => {
+    const c = composer.getBoundingClientRect();
+    const bottom = c.height ? c.bottom + window.scrollY : document.body.scrollHeight;
+    const y = bottom <= window.innerHeight - 8 ? 0 : bottom - window.innerHeight + 24;
+    window.scrollTo({ top:y, behavior:REDUCE ? "auto" : "smooth" });
+  });
+}
+function setProgress(n, name){
+  stepEl.textContent = n;
+  fill.style.width = Math.min(100, Math.round((n / CONFIG.TOTAL_STEPS) * 100)) + "%";
+  track(n, name);
+}
+function typingRow(){
+  const r = el("div", "row bot");
+  r.innerHTML = `${avatarHTML()}<div class="bubble typing"><span></span><span></span><span></span></div>`;
+  feed.appendChild(r); down();
+  return r;
+}
+async function botSay(html, opt){
+  opt = opt || {};
+  const t = typingRow();
+  await wait(opt.delay ?? (700 + Math.min(html.length * 7, 900)));
+  t.remove();
+  const r = el("div", "row bot pop");
+  r.innerHTML = `${avatarHTML()}<div class="bubble">${html}</div>`;
+  feed.appendChild(r); down();
+  await wait(opt.after ?? 320);
+}
+function userSay(text){
+  const r = el("div", "row user pop");
+  r.innerHTML = `<div class="bubble">${esc(text)}</div>`;
+  feed.appendChild(r); down();
+}
+
+function askText(o){
+  return new Promise(res => {
+    composer.innerHTML = "";
+    const w = el("div", "composer-in");
+    w.innerHTML = `${o.label ? `<label class="field-label">${o.label}</label>` : ""}
+      <div class="pill${o.glow ? " glow" : ""}">
+        <input class="pill-input" type="text" maxlength="${o.max || 80}" enterkeyhint="send" placeholder="${esc(o.placeholder || "")}" autocomplete="${o.autocomplete || "off"}" aria-label="${esc(o.label || o.placeholder || "")}">
+        <button class="send" aria-label="Enviar" disabled>${I.send}</button>
+      </div>
+      <div class="err" role="alert" hidden></div>`;
+    composer.appendChild(w);
+    const inp = w.querySelector("input"), btn = w.querySelector(".send"), err = w.querySelector(".err"), pill = w.querySelector(".pill");
+    inp.addEventListener("input", () => { btn.disabled = inp.value.trim() === ""; err.hidden = true; pill.classList.remove("glow"); });
+    if (o.mark) inp.addEventListener("focus", () => { if (!inp._m) { inp._m = 1; trackEvent(o.mark); } });
+    const go = () => {
+      const v = inp.value.trim().replace(/\s+/g, " ");
+      if (!v) return;
+      if (o.validate) { const m = o.validate(v); if (m) { err.textContent = m; err.hidden = false; return; } }
+      composer.innerHTML = ""; res(v);
+    };
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); go(); } });
+    btn.addEventListener("click", go);
+    setTimeout(() => inp.focus(), REDUCE ? 0 : 220); down();
+  });
+}
+function askPhone(){
+  return new Promise(res => {
+    composer.innerHTML = "";
+    const w = el("div", "composer-in");
+    w.innerHTML = `<label class="field-label">WhatsApp</label>
+      <div class="pill"><span class="ddi">${FLAG_BR}+55</span>
+        <input class="pill-input" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="(11) 99999-9999" aria-label="Seu WhatsApp com DDD">
+        <button class="send" aria-label="Enviar" disabled>${I.send}</button></div>
+      <div class="err" role="alert" hidden></div>`;
+    composer.appendChild(w);
+    const inp = w.querySelector("input"), btn = w.querySelector(".send"), err = w.querySelector(".err");
+    let digits = "";
+    inp.addEventListener("input", () => {
+      digits = inp.value.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "").slice(0, 11);
+      let f = digits;
+      if (digits.length > 2) f = `(${digits.slice(0,2)}) ${digits.slice(2)}`;
+      if (digits.length > 7) f = `(${digits.slice(0,2)}) ${digits.slice(2, digits.length - 4)}-${digits.slice(-4)}`;
+      inp.value = f; btn.disabled = digits.length < 10; err.hidden = true;
+    });
+    const go = () => {
+      const ddd = +digits.slice(0, 2);
+      if (digits.length < 10 || ddd < 11 || ddd > 99) { err.textContent = "Digite um WhatsApp válido com DDD."; err.hidden = false; return; }
+      composer.innerHTML = ""; res({ digits, ddd:digits.slice(0, 2) });
+    };
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); go(); } });
+    btn.addEventListener("click", go);
+    setTimeout(() => inp.focus(), REDUCE ? 0 : 220); down();
+  });
+}
+function askSelect(o){
+  return new Promise(res => {
+    composer.innerHTML = "";
+    const w = el("div", "composer-in");
+    w.innerHTML = `<label class="field-label">${o.label}</label>
+      <button class="select-trigger" aria-haspopup="listbox" aria-expanded="false"><span class="muted">${o.placeholder}</span>${I.chevron}</button>
+      <div class="select-panel" role="listbox" aria-label="${esc(o.label)}" hidden></div>`;
+    composer.appendChild(w);
+    const trg = w.querySelector(".select-trigger"), pan = w.querySelector(".select-panel");
+    o.options.forEach(opt => {
+      const b = el("button", "option", esc(opt));
+      b.setAttribute("role", "option");
+      b.addEventListener("click", () => { composer.innerHTML = ""; res(opt); });
+      pan.appendChild(b);
+    });
+    const toggle = open => { pan.hidden = !open; trg.setAttribute("aria-expanded", String(open)); if (open) { down(); setTimeout(() => pan.querySelector(".option").focus({ preventScroll:true }), 30); } };
+    trg.addEventListener("click", () => toggle(pan.hidden));
+    w.addEventListener("keydown", e => {
+      if (e.key === "Escape" && !pan.hidden) { toggle(false); trg.focus(); }
+      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !pan.hidden) {
+        e.preventDefault();
+        const opts = [...pan.querySelectorAll(".option")], i = opts.indexOf(document.activeElement);
+        const n = e.key === "ArrowDown" ? Math.min(opts.length - 1, i + 1) : Math.max(0, i - 1);
+        opts[n].focus();
+      }
+    });
+    setTimeout(() => trg.focus({ preventScroll:true }), REDUCE ? 0 : 220); down();
+  });
+}
+
+/* ---------- envio ---------- */
+function buildPayload(data){
+  const u = new URLSearchParams(location.search);
+  return {
+    origem:CONFIG.ORIGEM, marca:"Frédy", enviado_em:new Date().toISOString(),
+    nome:data.nome, whatsapp:data.whatsapp, segmento:data.segmento,
+    restricao:data.restricao, qtd_contas:data.qtd_contas,
+    investimento:data.investimento, disparos:data.disparos,
+    uso:data.uso, atendimento:data.atendimento, restricoes_qtd:data.restricoes_qtd,
+    banido_importancia:data.banido_importancia, lista_tipo:data.lista_tipo,
+    whatsapp_canonical:data.whatsapp_canonical || null, whatsapp_invalido:!!data.whatsapp_invalido,
+    pagina:location.href, utm:getUtm(), consultor:CONSULTOR, session_id:SESSION_ID,
+    meta:{ event_id:SESSION_ID, fbp:getCookie("_fbp"), fbc:getCookie("_fbc"), fbclid:u.get("fbclid") || "" }
+  };
+}
+function enviarParcial(data){
+  if (!data.whatsapp) return;
+  const p = buildPayload(data); delete p.meta; p.parcial = true;
+  fireAndForget(CONFIG.PARCIAL_ENDPOINT, p);
+}
+async function enviarLead(payload){
+  window.__FREDY_LEAD = payload;  // inspecionável no console
+  if (!CONFIG.LEAD_ENDPOINT) {    // sem integração: o lead entra pelo botão do WhatsApp
+    await wait(700);
+    return {};
+  }
+  return postJSON(CONFIG.LEAD_ENDPOINT, payload, 9000);
+}
+async function whatsappValido(phone){
+  if (!CONFIG.CHECK_ENDPOINT) return { ok:true };
+  try {
+    const j = await postJSON(CONFIG.CHECK_ENDPOINT, { phone }, 9000);
+    return { ok:j.valid !== false, canonical:j.canonical || null };
+  } catch (_) { return { ok:true }; }  // fail-open
+}
+
+const CHECK_SVG = `<div class="check-wrap">${I.check}</div>`;
+const onlyDigits = s => String(s || "").replace(/\D/g, "");
+const fmtTel = d => { const m = onlyDigits(d).match(/^55(\d{2})(\d{4,5})(\d{4})$/); return m ? `+55 ${m[1]} ${m[2]}-${m[3]}` : ""; };
+
+/* Resumo das respostas que vai junto na mensagem do WhatsApp (chega no WTS com o lead) */
+function resumoRespostas(data){
+  const tel = d => { const m = onlyDigits(d).match(/^55(\d{2})(\d{4,5})(\d{4})$/); return m ? `(${m[1]}) ${m[2]}-${m[3]}` : d; };
+  const linhas = [
+    ["Situação", data.restricao],
+    ["Restrições já tomadas", data.restricoes_qtd],
+    ["Importância do número banido", data.banido_importancia],
+    ["Segmento", data.segmento],
+    ["Time de atendimento", data.atendimento],
+    ["Contas na API", data.qtd_contas],
+    ["Disparos", data.disparos + (data.lista_tipo ? ` | ${data.lista_tipo}` : "")],
+    ["Investimento", data.investimento],
+    ["WhatsApp pra contato", data.whatsapp ? tel(data.whatsapp) + (data.whatsapp_invalido ? " (não validado)" : "") : ""]
+  ];
+  return linhas.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join("\n");
+}
+
+async function submitApplication(data){
+  composer.innerHTML = "";
+  setProgress(CONFIG.TOTAL_STEPS, "envio");
+  const nome = data.nome.split(" ")[0];
+  const card = el("div", "app-card pop");
+  card.innerHTML = `<div class="success"><div class="check-wrap"><span class="spinner"></span></div><h2>Preparando sua solicitação...</h2><p>Organizando suas respostas pro nosso time.</p></div>`;
+  feed.appendChild(card); down();
+
+  let res;
+  try { res = await enviarLead(buildPayload(data)); }
+  catch (e) {
+    console.error("[Frédy] falha no envio:", e);
+    card.innerHTML = `<div class="success"><h2>Não consegui enviar seus dados</h2><p>A conexão falhou antes de chegar no nosso time. Tenta de novo em instantes.</p><button class="retry-btn" id="retryBtn">Tentar novamente</button></div>`;
+    card.querySelector("#retryBtn").addEventListener("click", () => { card.remove(); submitApplication(data); }, { once:true });
+    down(); return;
+  }
+
+  // Quem decide é o servidor. Sem resposta explícita, usa a mesma regra do funil original.
+  const excluido = (res && typeof res.excluido === "boolean")
+    ? res.excluido
+    : /acima do que posso/i.test(data.investimento || "");
+
+  if (excluido) { // obrigado neutro, sem pixel e sem consultor
+    card.innerHTML = `<div class="success">${CHECK_SVG}
+      <h2>Obrigado pelo seu tempo, ${esc(nome)}!</h2>
+      <p>No momento a nossa condição não se encaixa no seu cenário. Se algo mudar, é só voltar aqui.</p></div>`;
+    down(); return;
+  }
+
+  trackLead(data);
+  const cons = (res && res.consultor && onlyDigits(res.consultor.wpp)) ? res.consultor : CONFIG.CONSULTOR_PADRAO;
+  const wpp = onlyDigits(cons.wpp);
+  let consHTML = "";
+  if (wpp) {
+    const primeiro = String(cons.nome || "").split(" ")[0];
+    const msg = `Oi${primeiro ? " " + primeiro : ""}! Sou ${data.nome}, acabei de solicitar a API Oficial (COEX) e quero avançar.\n\n` + resumoRespostas(data);
+    const href = "https://wa.me/" + wpp + "?text=" + encodeURIComponent(msg);
+    const foto = /^https:\/\//i.test(cons.foto || "") ? `<img class="consultant-photo" src="${esc(cons.foto)}" alt="${esc(cons.nome || "")}" loading="lazy" onerror="this.remove()">` : "";
+    consHTML = `<div class="consultant">
+        <div class="consultant-label">Quem vai te atender:</div>
+        <div class="consultant-card">${foto}
+          <div class="consultant-info">
+            <div class="consultant-name">${esc(cons.nome || "Time Frédy")}</div>
+            <div class="consultant-role">${esc(cons.cargo || "Especialista em API Oficial do WhatsApp")}</div>
+            <div class="consultant-phone">${esc(fmtTel(cons.telefone || wpp))}</div>
+          </div>
+        </div>
+        <a class="wpp-btn" href="${esc(href)}" target="_blank" rel="noopener">${I.wpp} Falar com ${cons.nome ? "o " + esc(primeiro) : "o time"} agora</a>
+      </div>`;
+  }
+  card.innerHTML = `<div class="success">${CHECK_SVG}
+      <h2>Tudo pronto, ${esc(nome)}! 🎯</h2>
+      <p>${wpp ? "Pra seguir, é só chamar o nosso time no WhatsApp. Suas respostas já vão junto na mensagem." : "Recebemos seus dados. Nosso time vai te chamar no WhatsApp que você informou."}</p>
+      ${consHTML}
+    </div>`;
+  down();
+}
+
+async function encerrarSemQualificar(html){
+  composer.innerHTML = "";
+  await botSay(html, { delay:400 });
+  const card = el("div", "app-card pop");
+  card.innerHTML = `<div class="success">${CHECK_SVG}<h2>Obrigado pelo seu tempo!</h2><p>Se o seu cenário mudar, é só voltar aqui. A gente segue à disposição.</p></div>`;
+  feed.appendChild(card); down();
+}
+
+/* ---------- FLUXO ---------- */
+async function run(){
+  const data = {};
+  setProgress(0, "abertura");
+  await botSay(`Perder o WhatsApp no meio das vendas é o pesadelo de todo negócio. A <b>API Oficial (COEX)</b> blinda o seu número pra você nunca mais cair. Deixa eu entender o seu caso rapidinho. 🛡️`, { delay:250 });
+
+  // 1) Restrição
+  await botSay(`Primeiro, a pergunta que importa: <b>você está tomando restrição?</b>`);
+  data.restricao = await askSelect({ label:"A sua situação hoje", placeholder:"Selecione...", options:RESTRICAO });
+  userSay(data.restricao); setProgress(1, "restricao");
+
+  // 2) Uso comercial (portão com segunda chance)
+  await botSay(`Esse número é o que você usa para <b>falar com clientes</b>?`);
+  data.uso = await askSelect({ label:"Uso do número", placeholder:"Selecione...", options:USO });
+  userSay(data.uso); setProgress(2, "uso");
+  if (/^n[ãa]o/i.test(data.uso)) {
+    await botSay(`Só pra eu não te barrar à toa: você atende cliente por <b>algum</b> WhatsApp, mesmo que seja o comum, sem ser o Business?`);
+    const recup = await askSelect({ label:"Atendimento a clientes", placeholder:"Selecione...", options:USO_RECUPERA });
+    userSay(recup); setProgress(2, "uso_recuperacao");
+    if (/^atendo/i.test(recup)) {
+      data.uso = "Profissional (confirmado na 2ª pergunta)";
+      trackEvent("uso_recuperado");
+    } else {
+      trackEvent("saiu_uso_pessoal");
+      await encerrarSemQualificar(`A API Oficial do WhatsApp é liberada pela Meta <b>apenas para quem atende clientes</b>. Para uso só pessoal ela não se aplica. 🙏`);
+      return;
+    }
+  }
+
+  // 3) Ramificação conforme a restrição
+  if (/banid/i.test(data.restricao)) {
+    await botSay(`Entendi, número banido é o cenário mais delicado. <b>O quão importante era esse número</b> na sua operação?`);
+    data.banido_importancia = await askSelect({ label:"Importância do número", placeholder:"Selecione...", options:BANIDO_IMPORTANCIA });
+    userSay(data.banido_importancia); setProgress(3, "banido_importancia");
+  } else if (/^sim/i.test(data.restricao)) {
+    await botSay(`Entendi. <b>Quantas restrições temporárias</b> você já tomou?`);
+    data.restricoes_qtd = await askSelect({ label:"Restrições já tomadas", placeholder:"Selecione...", options:RESTRICOES_QTD });
+    userSay(data.restricoes_qtd); setProgress(3, "restricoes_qtd");
+  }
+
+  // 4) Segmento (portão de exclusão)
+  await botSay(`Em qual <b>segmento</b> você atua?`);
+  data.segmento = await askSelect({ label:"Segmento", placeholder:"Selecione o segmento...", options:SEGMENTOS });
+  userSay(data.segmento); setProgress(4, "segmento");
+  if (/financ|aposta|\bbet|rifa|sorteio|cons[oó]rcio/i.test(data.segmento)) {
+    trackEvent("saiu_segmento", data.segmento);
+    await encerrarSemQualificar(`Obrigado pelo interesse! No momento a nossa solução de API Oficial <b>não atende esse segmento</b>. Se algo mudar, a gente te avisa. 🙏`);
+    return;
+  }
+
+  // 5) Time de atendimento
+  await botSay(`Quantas pessoas <b>trabalham no atendimento</b> hoje?`);
+  data.atendimento = await askSelect({ label:"Time de atendimento", placeholder:"Selecione...", options:ATENDIMENTO });
+  userSay(data.atendimento); setProgress(5, "atendimento");
+
+  // 6) Quantidade de contas
+  await botSay(`<b>Quantas contas de WhatsApp</b> você precisa colocar na API Oficial?`);
+  data.qtd_contas = await askSelect({ label:"Contas na API Oficial", placeholder:"Selecione...", options:QTD_CONTAS });
+  userSay(data.qtd_contas); setProgress(6, "contas");
+
+  // 7) Disparos + tipo de lista
+  await botSay(`Você precisa fazer <b>disparos ou iniciar novas conversas</b>? Se sim, a gente também te apresenta a nossa <b>plataforma de disparos na API Oficial</b>. 🚀`);
+  data.disparos = await askSelect({ label:"Disparos / novas conversas", placeholder:"Selecione...", options:DISPAROS });
+  userSay(data.disparos); setProgress(7, "disparos");
+  if (/^sim/i.test(data.disparos)) {
+    await botSay(`Só pra eu entender o cenário: esses envios são pra <b>base de clientes</b> ou <b>lista fria</b>?`);
+    data.lista_tipo = await askSelect({ label:"Tipo de lista", placeholder:"Selecione...", options:LISTA_TIPO });
+    userSay(data.lista_tipo); setProgress(8, "lista_tipo");
+  }
+
+  // 8) Contato (antes do preço: quem chega no investimento já fica capturado)
+  await botSay(`Show! Agora me diz: <b>como posso te chamar?</b>`);
+  trackEvent("nome_visivel");
+  data.nome = await askText({
+    placeholder:"Seu nome...", mark:"nome_focus", glow:true, autocomplete:"given-name", max:60,
+    validate:v => /[A-Za-zÀ-ÿ]{2,}/.test(v) ? "" : "Digite seu nome pra eu saber como te chamar."
+  });
+  userSay(data.nome); setProgress(9, "nome");
+  const nome = data.nome.split(" ")[0];
+
+  await botSay(`Prazer, <b>${esc(nome)}</b>! Me passa um <b>WhatsApp pra contato</b> que NÃO esteja restrito (é por onde a gente fala com você).`);
+  let ph, tentativas = 0;
+  while (true) {
+    ph = await askPhone();
+    userSay(`+55 (${ph.digits.slice(0,2)}) ${ph.digits.slice(2)}`);
+    const t = typingRow();
+    const chk = await whatsappValido("+55" + ph.digits);
+    t.remove();
+    data.whatsapp_canonical = chk.canonical || null;
+    if (chk.ok) break;
+    tentativas++;
+    if (tentativas >= 4) { data.whatsapp_invalido = true; break; }  // libera marcado como não validado
+    await botSay(tentativas === 1
+      ? `Hmm, não achei um WhatsApp ativo nesse número. 🤔 Confere o DDD e me manda de novo.`
+      : `Ainda não encontrei esse número no WhatsApp. Me manda um número <b>com WhatsApp ativo</b>, é por ele que a gente vai te responder.`);
+  }
+  data.whatsapp = "+55" + ph.digits; setProgress(10, "whatsapp");
+  enviarParcial(data);
+
+  // 9) Investimento (último portão)
+  await botSay(`Perfeito! Agora, transparência total sobre o <b>investimento</b>: a implantação da API Oficial fica em <b>${esc(CONFIG.PRECO_POR_NUMERO)} por número de WhatsApp</b>.`);
+  await botSay(`Se você tiver um <b>volume maior de contas</b>, a gente consegue uma <b>condição especial</b>. 💰`, { delay:450 });
+  await botSay(`Esse investimento <b>está tudo bem pra você</b>?`, { delay:350 });
+  data.investimento = await askSelect({ label:"Sobre o investimento", placeholder:"Selecione...", options:INVESTIMENTO });
+  userSay(data.investimento); setProgress(11, "investimento");
+  enviarParcial(data);
+
+  await botSay(`É isso, <b>${esc(nome)}</b>! Agora é só falar com o nosso time pra dar o próximo passo. 🚀`, { delay:400 });
+  await submitApplication(data);
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  run().catch(e => { console.error("[Frédy] erro no fluxo:", e); trackEvent("jsflow", ((e && e.message) || String(e)).slice(0, 290)); });
+});
+</script>
+</body>
+</html>
